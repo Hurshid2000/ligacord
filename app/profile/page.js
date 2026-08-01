@@ -69,6 +69,7 @@ export default async function ProfilePage() {
               gives: l.gives,
               seeks: l.seeks,
               category: l.category,
+              partnershipType: l.partnershipType,
               budget: l.budget,
               venue: l.venue,
               expiresAt: l.expiresAt,

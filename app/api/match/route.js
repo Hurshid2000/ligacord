@@ -3,14 +3,17 @@ import { prisma } from "@/lib/db";
 import { callClaude, extractJsonArray, hasKey } from "@/lib/claude";
 import { getSessionUserId } from "@/lib/auth";
 import { publicListingWhere } from "@/lib/listingFilters";
+import { PARTNERSHIP_LABEL } from "@/lib/partnershipTypes";
 import { mockMatches } from "@/lib/mock";
 
 const LANG_NAME = { ru: "Russian", uz: "Uzbek" };
 
-function dealContext({ company, give, get, budget, timeline, venue }) {
-  let s = `Company: ${company || "(not specified)"}\nGives in barter: ${give}\nSeeks in return: ${get}`;
+function dealContext({ company, give, get, budget, venue, partnershipType }) {
+  let s = `Company: ${company || "(not specified)"}\nOffers: ${give}\nSeeks in return: ${get}`;
+  if (partnershipType) {
+    s += `\nWanted partnership format: ${PARTNERSHIP_LABEL[partnershipType] || partnershipType}`;
+  }
   if (budget?.trim()) s += `\nBudget / cash top-up: ${budget}`;
-  if (timeline?.trim()) s += `\nTimeline: ${timeline}`;
   if (venue?.trim()) s += `\nVenue / format: ${venue}`;
   return s;
 }
@@ -48,13 +51,13 @@ export async function POST(req) {
   const catalog = listings
     .map(
       (l) =>
-        `- [id:${l.id}] ${l.company.name} [${l.category}] — ${l.company.about}\n  Отдаёт: ${l.gives}\n  Ищет: ${l.seeks}`
+        `- [id:${l.id}] ${l.company.name} [${l.category}] — ${l.company.about}\n  Формат партнёрства: ${PARTNERSHIP_LABEL[l.partnershipType] || l.partnershipType}\n  Отдаёт: ${l.gives}\n  Ищет: ${l.seeks}`
     )
     .join("\n");
 
   const system = `You are Ligacord — an expert B2B barter and partnership matchmaker for the Uzbekistan market (Tashkent), focused on barter for marketing, media, sports, and events.
 
-You are given the platform's REAL catalog of barter listings. You MUST pick the 3 best partners for the user's company FROM THIS CATALOG ONLY — never invent companies. Reason critically about mutual value, audience overlap, timing, and what each side actually gives and gets in a NON-CASH barter deal. Be candid, not a salesperson.
+You are given the platform's REAL catalog of partnership listings. Each one states its partnership format: Бартер (non-cash exchange), Спонсорство, Кросс-промо, Аффилейт, Дистрибуция or Реферальная программа. You MUST pick the 3 best partners for the user's company FROM THIS CATALOG ONLY — never invent companies. Reason critically about mutual value, audience overlap, timing, and what each side actually gives and gets under that specific format. If the user asked for a particular format, strongly prefer listings offering it, and say so in the caveat when a strong match uses a different format. Be candid, not a salesperson.
 
 CATALOG:
 ${catalog}

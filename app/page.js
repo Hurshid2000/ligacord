@@ -28,6 +28,8 @@ export default async function Home() {
         gives: l.gives,
         seeks: l.seeks,
         category: l.category,
+        partnershipType: l.partnershipType,
+        expiresAt: l.expiresAt,
         company: {
           name: l.company.name,
           about: l.company.about,

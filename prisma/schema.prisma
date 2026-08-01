@@ -48,10 +48,14 @@ model Listing {
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   title    String
-  // The two halves of a barter deal.
+  // The two halves of the deal.
   gives    String
   seeks    String
   category String  @default("other")
+
+  // What kind of partnership is on offer: barter / sponsorship / cross_promo /
+  // affiliate / distribution / referral. See lib/partnershipTypes.js.
+  partnershipType String @default("barter")
 
   // Optional deal details from the form.
   budget String @default("")
@@ -67,6 +71,7 @@ model Listing {
   updatedAt DateTime @updatedAt
 
   @@index([category])
+  @@index([partnershipType])
   @@index([isActive, createdAt])
   @@index([expiresAt])
 }

@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import Header from "./components/Header";
 import { CATEGORIES, CAT_LABEL } from "@/lib/categories";
+import { PARTNERSHIP_TYPES, PARTNERSHIP_LABEL } from "@/lib/partnershipTypes";
 
 function scoreColor(s) {
   if (s >= 80) return "var(--get)";
@@ -17,6 +18,7 @@ function scoreColor(s) {
 export default function CatalogClient({ user, initialListings }) {
   const [listings, setListings] = useState(initialListings);
   const [category, setCategory] = useState("all");
+  const [partnership, setPartnership] = useState("all");
   const [q, setQ] = useState("");
   const [loadingList, setLoadingList] = useState(false);
 
@@ -36,6 +38,7 @@ export default function CatalogClient({ user, initialListings }) {
     try {
       const p = new URLSearchParams();
       if (category !== "all") p.set("category", category);
+      if (partnership !== "all") p.set("partnership", partnership);
       if (q.trim()) p.set("q", q.trim());
       const res = await fetch(`/api/listings?${p}`);
       const d = await res.json();
@@ -43,7 +46,7 @@ export default function CatalogClient({ user, initialListings }) {
     } finally {
       setLoadingList(false);
     }
-  }, [category, q]);
+  }, [category, partnership, q]);
 
   // Debounce so typing doesn't fire a request per keystroke.
   useEffect(() => {
@@ -113,8 +116,9 @@ export default function CatalogClient({ user, initialListings }) {
           <span style={{ color: "var(--give)", fontStyle: "italic" }}>обменяться.</span>
         </h1>
         <p style={{ color: "#4a4a44", lineHeight: 1.55, maxWidth: 620, margin: 0 }}>
-          Каталог бартер-предложений компаний. Найдите партнёра сами через поиск —
-          или доверьте это AI-агенту: он разберёт, кому вы подходите, и напишет готовое КП.
+          Каталог партнёрских предложений: бартер, спонсорство, кросс-промо, аффилейт,
+          дистрибуция и рефералы. Найдите партнёра сами через поиск — или доверьте это
+          AI-агенту: он разберёт, кому вы подходите, и напишет готовое КП.
         </p>
       </section>
 
@@ -137,9 +141,19 @@ export default function CatalogClient({ user, initialListings }) {
             />
           </div>
           <select
+            value={partnership}
+            onChange={(e) => setPartnership(e.target.value)}
+            style={{ width: "auto", minWidth: 165 }}
+          >
+            <option value="all">Любой формат</option>
+            {PARTNERSHIP_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
+          <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            style={{ width: "auto", minWidth: 170 }}
+            style={{ width: "auto", minWidth: 165 }}
           >
             <option value="all">Все категории</option>
             {CATEGORIES.map((c) => (
@@ -285,7 +299,12 @@ export default function CatalogClient({ user, initialListings }) {
               <h3 style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 16, lineHeight: 1.3 }}>
                 {l.company.name}
               </h3>
-              {l.company.isDemo && <span className="badge badge-demo">демо</span>}
+              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                <span className="badge badge-type">
+                  {PARTNERSHIP_LABEL[l.partnershipType] || "Бартер"}
+                </span>
+                {l.company.isDemo && <span className="badge badge-demo">демо</span>}
+              </div>
             </div>
 
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".05em" }}>

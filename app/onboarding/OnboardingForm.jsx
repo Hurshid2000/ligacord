@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, ChevronRight } from "lucide-react";
 import { CATEGORIES } from "@/lib/categories";
+import { PARTNERSHIP_TYPES, DEFAULT_PARTNERSHIP } from "@/lib/partnershipTypes";
 
 export default function OnboardingForm({ initial }) {
   const router = useRouter();
@@ -14,7 +15,7 @@ export default function OnboardingForm({ initial }) {
     contact: initial?.contact || "",
     gives: "",
     seeks: "",
-    ...(initial?.budget ? {} : {}),
+    partnershipType: DEFAULT_PARTNERSHIP,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -110,8 +111,20 @@ export default function OnboardingForm({ initial }) {
         </div>
 
         <div className="note">
-          Заполните оба поля ниже — и ваше первое объявление сразу появится в каталоге.
+          Заполните поля ниже — и ваше первое объявление сразу появится в каталоге.
         </div>
+
+        <label className="field">
+          <span className="label">Формат партнёрства</span>
+          <select value={f.partnershipType} onChange={set("partnershipType")}>
+            {PARTNERSHIP_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
+          <span style={{ fontSize: 11.5, color: "var(--muted)", lineHeight: 1.4 }}>
+            {PARTNERSHIP_TYPES.find((t) => t.value === f.partnershipType)?.hint}
+          </span>
+        </label>
 
         <div className="row2">
           <label className="field">

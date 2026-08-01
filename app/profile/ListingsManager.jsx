@@ -7,9 +7,11 @@ import {
 } from "lucide-react";
 import { CATEGORIES, CAT_LABEL } from "@/lib/categories";
 import { isExpired } from "@/lib/listingFilters";
+import { PARTNERSHIP_TYPES, PARTNERSHIP_LABEL, DEFAULT_PARTNERSHIP } from "@/lib/partnershipTypes";
 
 const EMPTY = {
-  title: "", gives: "", seeks: "", category: "other", budget: "", expiresAt: "", venue: "",
+  title: "", gives: "", seeks: "", category: "other",
+  partnershipType: DEFAULT_PARTNERSHIP, budget: "", expiresAt: "", venue: "",
 };
 
 // <input type="date"> needs a plain YYYY-MM-DD value.
@@ -122,6 +124,8 @@ export default function ListingsManager({ listings, defaultCategory }) {
                     {isExpired(l) && <span className="badge badge-demo">срок истёк</span>}
                   </h3>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".05em" }}>
+                    {PARTNERSHIP_LABEL[l.partnershipType] || "Бартер"}
+                    {" · "}
                     {CAT_LABEL[l.category] || l.category}
                     {!l.isActive && " · скрыто из каталога"}
                     {l.expiresAt && !isExpired(l) && ` · до ${formatDate(l.expiresAt)}`}
@@ -211,6 +215,7 @@ function ListingForm({ initial, submitLabel, onSubmit, onCancel }) {
         gives: f.gives,
         seeks: f.seeks,
         category: f.category,
+        partnershipType: f.partnershipType,
         budget: f.budget,
         expiresAt: f.expiresAt,
         venue: f.venue,
@@ -224,6 +229,18 @@ function ListingForm({ initial, submitLabel, onSubmit, onCancel }) {
 
   return (
     <form className="panel" onSubmit={submit} style={{ borderColor: "var(--ink)" }}>
+      <label className="field">
+        <span className="label">Формат партнёрства</span>
+        <select value={f.partnershipType} onChange={set("partnershipType")}>
+          {PARTNERSHIP_TYPES.map((t) => (
+            <option key={t.value} value={t.value}>{t.label}</option>
+          ))}
+        </select>
+        <span style={{ fontSize: 11.5, color: "var(--muted)", lineHeight: 1.4 }}>
+          {PARTNERSHIP_TYPES.find((t) => t.value === f.partnershipType)?.hint}
+        </span>
+      </label>
+
       <label className="field">
         <span className="label">Заголовок</span>
         <input

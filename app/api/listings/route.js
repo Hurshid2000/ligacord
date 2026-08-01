@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/auth";
 import { publicListingWhere, parseExpiry } from "@/lib/listingFilters";
+import { normalizePartnership, PARTNERSHIP_VALUES } from "@/lib/partnershipTypes";
 
 // Public catalog. Contacts are deliberately omitted for guests — signing in is
 // what unlocks them, which is the whole point of registering.
@@ -13,8 +14,13 @@ export async function GET(req) {
 
   const uid = await getSessionUserId();
 
+  const partnership = searchParams.get("partnership");
+
   const and = [];
   if (category && category !== "all") and.push({ category });
+  if (partnership && partnership !== "all" && PARTNERSHIP_VALUES.includes(partnership)) {
+    and.push({ partnershipType: partnership });
+  }
   if (q) {
     and.push({
       OR: [
@@ -41,6 +47,7 @@ export async function GET(req) {
       gives: l.gives,
       seeks: l.seeks,
       category: l.category,
+      partnershipType: l.partnershipType,
       budget: l.budget,
       venue: l.venue,
       expiresAt: l.expiresAt,
@@ -80,6 +87,7 @@ export async function POST(req) {
       gives,
       seeks,
       category: String(body.category || company.category || "other").trim(),
+      partnershipType: normalizePartnership(body.partnershipType),
       budget: String(body.budget || "").trim(),
       venue: String(body.venue || "").trim(),
       expiresAt: parseExpiry(body.expiresAt) ?? null,

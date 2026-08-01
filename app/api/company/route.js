@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/auth";
 import { parseExpiry } from "@/lib/listingFilters";
+import { normalizePartnership } from "@/lib/partnershipTypes";
 
 // Creates or updates the signed-in user's company profile (the onboarding step).
 // Optionally creates a first listing in the same call when gives/seeks are filled.
@@ -40,6 +41,7 @@ export async function POST(req) {
         gives,
         seeks,
         category: data.category,
+        partnershipType: normalizePartnership(body.partnershipType),
         budget: String(body.budget || "").trim(),
         venue: String(body.venue || "").trim(),
         expiresAt: parseExpiry(body.expiresAt) ?? null,
