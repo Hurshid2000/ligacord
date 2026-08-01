@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ligacord
 
-## Getting Started
+B2B-платформа подбора **бартерных** партнёров с AI-агентом. Пользователь описывает,
+что компания готова отдать в обмен и что ищет; агент подбирает релевантных партнёров
+из базы, обосновывает каждый выбор (включая честные риски) и генерирует готовое КП.
 
-First, run the development server:
+Заявка на **President AI Award (PAIA)**, IT Park Uzbekistan.
+
+## Что делает AI (для конкурса)
+
+1. **Подбор с рассуждением** — агент выбирает 3 партнёра **из реальной базы** (`lib/companies.js`),
+   а не выдумывает их, и оценивает взаимную ценность и пересечение аудиторий.
+2. **Критический слой** — по каждому мэтчу честный риск / что проверить.
+3. **Генерация КП** — готовое коммерческое предложение под конкретную пару компаний,
+   в выбранном тоне и на выбранном языке.
+4. **Двуязычность** — узбекский + русский.
+
+Ключ Anthropic хранится только на сервере (`/app/api/*`), фронтенд его не видит.
+
+## Запуск локально
 
 ```bash
+npm install
+cp .env.local.example .env.local   # впишите ANTHROPIC_API_KEY (опционально)
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Открыть http://localhost:3000
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+**Без ключа** приложение работает в демо-режиме (реалистичные заглушки) — этого
+достаточно, чтобы показать интерфейс и задеплоить рабочую ссылку. С ключом
+подбор и КП генерируются реально через Claude.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Стек
 
-## Learn More
+- Next.js (App Router) — UI + серверные API-роуты
+- Anthropic Claude API (`claude-opus-5` по умолчанию; можно `claude-sonnet-5`)
 
-To learn more about Next.js, take a look at the following resources:
+## Деплой
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Vercel: подключить репозиторий, задать переменную окружения `ANTHROPIC_API_KEY`,
+задеплоить. Полученный URL — это `MVP link` для заявки PAIA.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Не входит в MVP (следующие этапы)
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Telegram-бот, личные кабинеты и самостоятельная регистрация, автоматические
+платежи/комиссии, автоматическая верификация компаний.
