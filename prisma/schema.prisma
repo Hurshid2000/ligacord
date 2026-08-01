@@ -1,0 +1,67 @@
+// Ligacord data model.
+// Company has many Listings (one company can post several barter offers).
+// Catalog is public; contacts are gated behind auth in the app layer.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  // Stored normalized to E.164 (+998XXXXXXXXX) so lookups are unambiguous.
+  phone        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  company Company?
+}
+
+model Company {
+  id       String  @id @default(cuid())
+  // Demo/seed companies have no owner — that's why userId is optional.
+  userId   String? @unique
+  user     User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name     String
+  about    String  @default("")
+  category String  @default("other")
+  contact  String  @default("")
+  // Marks the seeded example companies so the UI can label them honestly.
+  isDemo   Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  listings Listing[]
+
+  @@index([category])
+  @@index([isDemo])
+}
+
+model Listing {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  title    String
+  // The two halves of a barter deal.
+  gives    String
+  seeks    String
+  category String  @default("other")
+
+  // Optional deal details from the form.
+  budget   String @default("")
+  timeline String @default("")
+  venue    String @default("")
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([isActive, createdAt])
+}
