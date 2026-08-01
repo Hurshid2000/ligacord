@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { callClaude, extractJsonArray, hasKey } from "@/lib/claude";
 import { getSessionUserId } from "@/lib/auth";
+import { publicListingWhere } from "@/lib/listingFilters";
 import { mockMatches } from "@/lib/mock";
 
 const LANG_NAME = { ru: "Russian", uz: "Uzbek" };
@@ -28,7 +29,8 @@ export async function POST(req) {
   const own = uid ? await prisma.company.findUnique({ where: { userId: uid } }) : null;
 
   const listings = await prisma.listing.findMany({
-    where: { isActive: true, ...(own ? { NOT: { companyId: own.id } } : {}) },
+    // Expired offers must never be proposed as matches.
+    where: publicListingWhere(own ? [{ NOT: { companyId: own.id } }] : []),
     take: 80,
     orderBy: { createdAt: "desc" },
     include: { company: true },

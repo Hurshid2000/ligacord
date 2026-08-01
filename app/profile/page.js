@@ -70,8 +70,8 @@ export default async function ProfilePage() {
               seeks: l.seeks,
               category: l.category,
               budget: l.budget,
-              timeline: l.timeline,
               venue: l.venue,
+              expiresAt: l.expiresAt,
               isActive: l.isActive,
             }))}
             defaultCategory={company.category}

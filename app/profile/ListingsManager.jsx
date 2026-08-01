@@ -6,10 +6,24 @@ import {
   Plus, Loader2, Pencil, Trash2, Eye, EyeOff, X, Check,
 } from "lucide-react";
 import { CATEGORIES, CAT_LABEL } from "@/lib/categories";
+import { isExpired } from "@/lib/listingFilters";
 
 const EMPTY = {
-  title: "", gives: "", seeks: "", category: "other", budget: "", timeline: "", venue: "",
+  title: "", gives: "", seeks: "", category: "other", budget: "", expiresAt: "", venue: "",
 };
+
+// <input type="date"> needs a plain YYYY-MM-DD value.
+function toDateInput(v) {
+  if (!v) return "";
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+}
+
+function formatDate(v) {
+  return new Date(v).toLocaleDateString("ru-RU", {
+    day: "numeric", month: "long", year: "numeric",
+  });
+}
 
 export default function ListingsManager({ listings, defaultCategory }) {
   const router = useRouter();
@@ -99,16 +113,18 @@ export default function ListingsManager({ listings, defaultCategory }) {
             <article
               className="panel"
               key={l.id}
-              style={{ padding: 18, opacity: l.isActive ? 1 : 0.62 }}
+              style={{ padding: 18, opacity: l.isActive && !isExpired(l) ? 1 : 0.62 }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", marginBottom: 10 }}>
                 <div>
                   <h3 style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 16, lineHeight: 1.3 }}>
-                    {l.title}
+                    {l.title}{" "}
+                    {isExpired(l) && <span className="badge badge-demo">срок истёк</span>}
                   </h3>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".05em" }}>
                     {CAT_LABEL[l.category] || l.category}
                     {!l.isActive && " · скрыто из каталога"}
+                    {l.expiresAt && !isExpired(l) && ` · до ${formatDate(l.expiresAt)}`}
                   </span>
                 </div>
                 <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
@@ -135,6 +151,13 @@ export default function ListingsManager({ listings, defaultCategory }) {
               <p style={{ fontSize: 13, lineHeight: 1.5, margin: 0 }}>
                 <strong style={{ color: "var(--get)" }}>Ищет:</strong> {l.seeks}
               </p>
+
+              {isExpired(l) && (
+                <div className="note" style={{ marginTop: 12, marginBottom: 0 }}>
+                  Срок истёк {formatDate(l.expiresAt)} — объявление скрыто из каталога.
+                  Чтобы вернуть его, нажмите «Редактировать» и поставьте новую дату.
+                </div>
+              )}
 
               {confirmId === l.id && (
                 <div className="note" style={{ marginTop: 14, marginBottom: 0, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -189,7 +212,7 @@ function ListingForm({ initial, submitLabel, onSubmit, onCancel }) {
         seeks: f.seeks,
         category: f.category,
         budget: f.budget,
-        timeline: f.timeline,
+        expiresAt: f.expiresAt,
         venue: f.venue,
       });
     } catch {
@@ -233,8 +256,16 @@ function ListingForm({ initial, submitLabel, onSubmit, onCancel }) {
           </select>
         </label>
         <label className="field">
-          <span className="label">Сроки</span>
-          <input value={f.timeline} onChange={set("timeline")} placeholder="Напр.: до конца сезона" />
+          <span className="label">Актуально до</span>
+          <input
+            type="date"
+            value={toDateInput(f.expiresAt)}
+            onChange={set("expiresAt")}
+            min={new Date().toISOString().slice(0, 10)}
+          />
+          <span style={{ fontSize: 11.5, color: "var(--muted)", lineHeight: 1.4 }}>
+            После этой даты объявление скроется из каталога. Оставьте пустым — будет висеть бессрочно.
+          </span>
         </label>
       </div>
 

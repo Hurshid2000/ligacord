@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/currentUser";
+import { publicListingWhere } from "@/lib/listingFilters";
 import CatalogClient from "./CatalogClient";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +9,7 @@ export default async function Home() {
   const user = await getCurrentUser();
 
   const listings = await prisma.listing.findMany({
-    where: { isActive: true },
+    where: publicListingWhere(),
     take: 60,
     orderBy: { createdAt: "desc" },
     include: { company: true },

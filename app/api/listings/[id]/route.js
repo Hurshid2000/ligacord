@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/auth";
+import { parseExpiry } from "@/lib/listingFilters";
 
 // Loads the listing only if it belongs to the signed-in user's company.
 // Everything below goes through this, so one user can never touch another's
@@ -47,8 +48,12 @@ export async function PATCH(req, { params }) {
   }
   if (body.category !== undefined) data.category = String(body.category).trim();
   if (body.budget !== undefined) data.budget = String(body.budget).trim();
-  if (body.timeline !== undefined) data.timeline = String(body.timeline).trim();
   if (body.venue !== undefined) data.venue = String(body.venue).trim();
+
+  // undefined = not supplied (leave as is); null = user cleared the deadline.
+  const expiry = parseExpiry(body.expiresAt);
+  if (expiry !== undefined) data.expiresAt = expiry;
+
   if (body.isActive !== undefined) data.isActive = Boolean(body.isActive);
 
   const updated = await prisma.listing.update({ where: { id }, data });

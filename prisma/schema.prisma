@@ -54,9 +54,13 @@ model Listing {
   category String  @default("other")
 
   // Optional deal details from the form.
-  budget   String @default("")
-  timeline String @default("")
-  venue    String @default("")
+  budget String @default("")
+  venue  String @default("")
+
+  // Offer deadline. null = open-ended. Once it passes the listing drops out of
+  // the public catalog and AI matching, but stays visible to its owner so they
+  // can extend it rather than lose it silently.
+  expiresAt DateTime?
 
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -64,4 +68,5 @@ model Listing {
 
   @@index([category])
   @@index([isActive, createdAt])
+  @@index([expiresAt])
 }

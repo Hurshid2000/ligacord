@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/auth";
+import { publicListingWhere, parseExpiry } from "@/lib/listingFilters";
 
 // Public catalog. Contacts are deliberately omitted for guests — signing in is
 // what unlocks them, which is the whole point of registering.
@@ -12,19 +13,21 @@ export async function GET(req) {
 
   const uid = await getSessionUserId();
 
-  const where = { isActive: true };
-  if (category && category !== "all") where.category = category;
+  const and = [];
+  if (category && category !== "all") and.push({ category });
   if (q) {
-    where.OR = [
-      { title: { contains: q, mode: "insensitive" } },
-      { gives: { contains: q, mode: "insensitive" } },
-      { seeks: { contains: q, mode: "insensitive" } },
-      { company: { name: { contains: q, mode: "insensitive" } } },
-    ];
+    and.push({
+      OR: [
+        { title: { contains: q, mode: "insensitive" } },
+        { gives: { contains: q, mode: "insensitive" } },
+        { seeks: { contains: q, mode: "insensitive" } },
+        { company: { name: { contains: q, mode: "insensitive" } } },
+      ],
+    });
   }
 
   const listings = await prisma.listing.findMany({
-    where,
+    where: publicListingWhere(and),
     take,
     orderBy: { createdAt: "desc" },
     include: { company: true },
@@ -39,8 +42,8 @@ export async function GET(req) {
       seeks: l.seeks,
       category: l.category,
       budget: l.budget,
-      timeline: l.timeline,
       venue: l.venue,
+      expiresAt: l.expiresAt,
       createdAt: l.createdAt,
       company: {
         name: l.company.name,
@@ -78,8 +81,8 @@ export async function POST(req) {
       seeks,
       category: String(body.category || company.category || "other").trim(),
       budget: String(body.budget || "").trim(),
-      timeline: String(body.timeline || "").trim(),
       venue: String(body.venue || "").trim(),
+      expiresAt: parseExpiry(body.expiresAt) ?? null,
     },
   });
 

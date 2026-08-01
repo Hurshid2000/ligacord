@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUserId } from "@/lib/auth";
+import { parseExpiry } from "@/lib/listingFilters";
 
 // Creates or updates the signed-in user's company profile (the onboarding step).
 // Optionally creates a first listing in the same call when gives/seeks are filled.
@@ -40,8 +41,8 @@ export async function POST(req) {
         seeks,
         category: data.category,
         budget: String(body.budget || "").trim(),
-        timeline: String(body.timeline || "").trim(),
         venue: String(body.venue || "").trim(),
+        expiresAt: parseExpiry(body.expiresAt) ?? null,
       },
     });
   }

@@ -290,6 +290,8 @@ export default function CatalogClient({ user, initialListings }) {
 
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".05em" }}>
               {CAT_LABEL[l.category] || l.category}
+              {l.expiresAt &&
+                ` · до ${new Date(l.expiresAt).toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}`}
             </span>
 
             {l.company.about && (
