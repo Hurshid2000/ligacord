@@ -59,7 +59,12 @@ npm run dev
    - `ANTHROPIC_API_KEY` = ключ Anthropic
 4. `Settings → Networking → Generate Domain`
 
-Миграции применяются автоматически при старте (`prisma migrate deploy`).
+При старте автоматически применяются миграции (`prisma migrate deploy`) и
+заливаются демо-компании (`prisma/seed.js`). Сид идемпотентен — повторные
+запуски ничего не дублируют, а его сбой не мешает приложению подняться.
+
+Разовые команды на проде, если понадобятся: `railway run <команда>`
+(через [Railway CLI](https://docs.railway.com/cli/run)).
 
 ## Дальше
 

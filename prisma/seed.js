@@ -41,8 +41,7 @@ async function main() {
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
+  // Seeding runs on every boot. It must never take the app down — if it fails
+  // (transient DB blip, etc.) log it and let the server start anyway.
+  .catch((e) => console.error("seed skipped:", e.message))
   .finally(() => prisma.$disconnect());
