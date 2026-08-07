@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { callClaude, extractJsonArray, hasKey } from "@/lib/claude";
+import { callClaude, hasKey } from "@/lib/claude";
 import { getSessionUserId } from "@/lib/auth";
 import { publicListingWhere } from "@/lib/listingFilters";
 import { PARTNERSHIP_LABEL } from "@/lib/partnershipTypes";
@@ -87,11 +87,44 @@ For EACH of the 3 matches return:
 
 If fewer than 3 listings are genuinely relevant, return only the ones that are — do not pad with weak matches.
 
-Respond ONLY with a valid JSON array. No markdown, no code fences, no preamble. Write all text values in ${LANG_NAME[lang] || "Russian"}.`;
+Keep every text value to one sentence. Write all text values in ${LANG_NAME[lang] || "Russian"}.`;
+
+  // Constraining the reply to this shape means the API guarantees parseable
+  // JSON — no prose wrappers, no fenced code blocks, no half-written objects.
+  const schema = {
+    type: "object",
+    properties: {
+      matches: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            listingId: { type: "string" },
+            title: { type: "string" },
+            fit: { type: "string" },
+            give: { type: "string" },
+            get: { type: "string" },
+            caveat: { type: "string" },
+            score: { type: "integer" },
+          },
+          required: ["listingId", "title", "fit", "give", "get", "caveat", "score"],
+          additionalProperties: false,
+        },
+      },
+    },
+    required: ["matches"],
+    additionalProperties: false,
+  };
 
   try {
-    const raw = await callClaude(system, dealContext(body), 2000);
-    const parsed = extractJsonArray(raw).slice(0, 3);
+    const raw = await callClaude(system, dealContext(body), {
+      // Thinking and the answer share this budget — keep it roomy so a long
+      // reasoning pass can't truncate the JSON.
+      maxTokens: 8000,
+      schema,
+      effort: "medium",
+    });
+    const parsed = (JSON.parse(raw).matches || []).slice(0, 3);
 
     // Attach the real contact from the DB (only for signed-in users) rather than
     // trusting the model to reproduce it.

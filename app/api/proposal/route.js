@@ -52,7 +52,9 @@ We give them: ${match.give}
 We get from them: ${match.get}`;
 
   try {
-    const text = await callClaude(system, user, 800);
+    // 800 was enough for the text alone, but adaptive thinking shares this
+    // budget and was truncating the proposal mid-sentence.
+    const text = await callClaude(system, user, { maxTokens: 4000, effort: "medium" });
     return NextResponse.json({ text });
   } catch (e) {
     return NextResponse.json({ error: e.message || "generation failed" }, { status: 502 });
