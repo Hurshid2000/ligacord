@@ -29,6 +29,8 @@ export default function CatalogClient({ user, initialListings }) {
   const [matches, setMatches] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
+  const [limitHit, setLimitHit] = useState(false);
+  const [quota, setQuota] = useState(null);
   const [isMock, setIsMock] = useState(false);
   const [kp, setKp] = useState({});
   const [copied, setCopied] = useState(null);
@@ -61,6 +63,7 @@ export default function CatalogClient({ user, initialListings }) {
       return;
     }
     setAiError("");
+    setLimitHit(false);
     setAiLoading(true);
     setMatches(null);
     setKp({});
@@ -71,11 +74,16 @@ export default function CatalogClient({ user, initialListings }) {
         body: JSON.stringify({ give, get: seek, company: user?.company?.name || "", lang: "ru" }),
       });
       const d = await res.json();
+      if (res.status === 429) {
+        setLimitHit(true);
+        return;
+      }
       if (!res.ok) {
         setAiError(d.error || "Не удалось подобрать");
         return;
       }
       setIsMock(Boolean(d.mock));
+      setQuota(d.quota || null);
       setMatches(d.matches || []);
     } catch {
       setAiError("Нет связи с сервером");
@@ -94,6 +102,11 @@ export default function CatalogClient({ user, initialListings }) {
           match: m, company: user?.company?.name || "", give, get: seek, tone: "warm", lang: "ru",
         }),
       });
+      if (res.status === 429) {
+        setKp((p) => ({ ...p, [i]: { loading: false, text: "" } }));
+        setLimitHit(true);
+        return;
+      }
       const d = await res.json();
       setKp((p) => ({ ...p, [i]: { loading: false, text: (d.text || d.error || "").trim() } }));
     } catch {
@@ -181,11 +194,42 @@ export default function CatalogClient({ user, initialListings }) {
               </label>
             </div>
             {aiError && <div className="err">{aiError}</div>}
-            <button className="btn btn-primary btn-block" disabled={aiLoading}>
-              {aiLoading
-                ? <><Loader2 className="spin" size={17} /> Агент анализирует каталог…</>
-                : <><Sparkles size={17} /> Подобрать партнёров</>}
-            </button>
+
+            {limitHit ? (
+              <div className="note" style={{ marginBottom: 0 }}>
+                {user ? (
+                  <>
+                    <strong>Дневной лимит AI-запросов исчерпан.</strong> Лимит обновится
+                    завтра. Каталог и поиск по-прежнему доступны без ограничений.
+                  </>
+                ) : (
+                  <>
+                    <strong>Пробные запросы закончились.</strong> Зарегистрируйтесь, чтобы
+                    продолжить пользоваться AI-подбором, разместить свои объявления и
+                    видеть контакты компаний.
+                    <div style={{ marginTop: 12 }}>
+                      <Link href="/auth" className="btn btn-primary">
+                        Зарегистрироваться
+                      </Link>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <>
+                <button className="btn btn-primary btn-block" disabled={aiLoading}>
+                  {aiLoading
+                    ? <><Loader2 className="spin" size={17} /> Агент анализирует каталог…</>
+                    : <><Sparkles size={17} /> Подобрать партнёров</>}
+                </button>
+                {!user && quota?.isGuest && (
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--muted)", textAlign: "center", marginTop: 10 }}>
+                    осталось пробных запросов: {quota.remaining} из {quota.limit} ·{" "}
+                    <Link href="/auth" style={{ color: "var(--get)" }}>зарегистрироваться</Link>
+                  </p>
+                )}
+              </>
+            )}
           </form>
         )}
       </div>

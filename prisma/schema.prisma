@@ -42,6 +42,19 @@ model Company {
   @@index([isDemo])
 }
 
+// Daily counter for paid AI calls, so an open endpoint can't drain the API
+// budget. Keyed by "user:<id>" for signed-in users and "ip:<sha256>" for guests
+// — the IP is hashed, never stored raw, since it is personal data.
+model AiUsage {
+  id    String @id @default(cuid())
+  key   String
+  day   String // YYYY-MM-DD (UTC)
+  count Int    @default(0)
+
+  @@unique([key, day])
+  @@index([day])
+}
+
 model Listing {
   id        String  @id @default(cuid())
   companyId String

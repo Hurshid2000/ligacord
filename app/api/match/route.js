@@ -4,6 +4,7 @@ import { callClaude, extractJsonArray, hasKey } from "@/lib/claude";
 import { getSessionUserId } from "@/lib/auth";
 import { publicListingWhere } from "@/lib/listingFilters";
 import { PARTNERSHIP_LABEL } from "@/lib/partnershipTypes";
+import { consumeAiQuota } from "@/lib/rateLimit";
 import { mockMatches } from "@/lib/mock";
 
 const LANG_NAME = { ru: "Russian", uz: "Uzbek" };
@@ -28,6 +29,15 @@ export async function POST(req) {
 
   const uid = await getSessionUserId();
 
+  // Charged before the AI call, so parallel requests can't slip past the cap.
+  const quota = await consumeAiQuota(req, uid);
+  if (!quota.allowed) {
+    return NextResponse.json(
+      { error: quota.isGuest ? "guest_limit" : "user_limit", limit: quota.limit },
+      { status: 429 }
+    );
+  }
+
   // Exclude the searcher's own listings — matching a company with itself is noise.
   const own = uid ? await prisma.company.findUnique({ where: { userId: uid } }) : null;
 
@@ -45,7 +55,11 @@ export async function POST(req) {
 
   // No key yet → deterministic demo data so the flow still demonstrates.
   if (!hasKey()) {
-    return NextResponse.json({ matches: mockMatches(lang), mock: true });
+    return NextResponse.json({
+      matches: mockMatches(lang),
+      mock: true,
+      quota: { remaining: quota.remaining, limit: quota.limit, isGuest: quota.isGuest },
+    });
   }
 
   const catalog = listings
@@ -96,7 +110,11 @@ Respond ONLY with a valid JSON array. No markdown, no code fences, no preamble. 
       };
     });
 
-    return NextResponse.json({ matches, signedIn: Boolean(uid) });
+    return NextResponse.json({
+      matches,
+      signedIn: Boolean(uid),
+      quota: { remaining: quota.remaining, limit: quota.limit, isGuest: quota.isGuest },
+    });
   } catch (e) {
     return NextResponse.json({ error: e.message || "matching failed" }, { status: 502 });
   }

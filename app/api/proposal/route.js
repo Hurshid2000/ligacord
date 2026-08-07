@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { callClaude, hasKey } from "@/lib/claude";
+import { getSessionUserId } from "@/lib/auth";
+import { consumeAiQuota } from "@/lib/rateLimit";
 import { mockProposal } from "@/lib/mock";
 
 const LANG_NAME = { ru: "Russian", uz: "Uzbek" };
@@ -23,6 +25,16 @@ export async function POST(req) {
 
   if (!match?.title) {
     return NextResponse.json({ error: "match is required" }, { status: 400 });
+  }
+
+  // Writing a proposal is a paid call too — same daily budget as matching.
+  const uid = await getSessionUserId();
+  const quota = await consumeAiQuota(req, uid);
+  if (!quota.allowed) {
+    return NextResponse.json(
+      { error: quota.isGuest ? "guest_limit" : "user_limit", limit: quota.limit },
+      { status: 429 }
+    );
   }
 
   if (!hasKey()) {
