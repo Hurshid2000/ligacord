@@ -2,8 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Sparkles, Loader2, ArrowLeftRight, AlertTriangle, Search, Lock, X, Copy, Check, ChevronRight,
+  MessageSquare,
 } from "lucide-react";
 import Header from "./components/Header";
 import { CATEGORIES, CAT_LABEL } from "@/lib/categories";
@@ -16,6 +18,8 @@ function scoreColor(s) {
 }
 
 export default function CatalogClient({ user, initialListings }) {
+  const router = useRouter();
+  const [startingChat, setStartingChat] = useState(null);
   const [listings, setListings] = useState(initialListings);
   const [category, setCategory] = useState("all");
   const [partnership, setPartnership] = useState("all");
@@ -89,6 +93,27 @@ export default function CatalogClient({ user, initialListings }) {
       setAiError("Нет связи с сервером");
     } finally {
       setAiLoading(false);
+    }
+  }
+
+  // Opens (or reopens) the negotiation thread for a listing.
+  async function writeTo(listingId) {
+    if (!user) { router.push("/auth"); return; }
+    setStartingChat(listingId);
+    try {
+      const res = await fetch("/api/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ listingId }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (d.error === "no_company") router.push("/onboarding");
+        return;
+      }
+      router.push(`/messages?c=${d.id}`);
+    } finally {
+      setStartingChat(null);
     }
   }
 
@@ -373,7 +398,23 @@ export default function CatalogClient({ user, initialListings }) {
               </div>
             </div>
 
-            <ContactSlot contact={l.company.contact} signedIn={Boolean(user)} />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+              <ContactSlot contact={l.company.contact} signedIn={Boolean(user)} />
+              {/* Seeded example companies have nobody to answer, so no button. */}
+              {!l.company.isDemo && (
+                <button
+                  className="btn"
+                  style={{ fontSize: 13, padding: "7px 12px" }}
+                  onClick={() => writeTo(l.id)}
+                  disabled={startingChat === l.id}
+                >
+                  {startingChat === l.id
+                    ? <Loader2 className="spin" size={14} />
+                    : <MessageSquare size={14} />}
+                  Написать
+                </button>
+              )}
+            </div>
           </article>
         ))}
       </div>

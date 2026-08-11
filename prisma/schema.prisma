@@ -15,6 +15,9 @@ model User {
   // Stored normalized to E.164 (+998XXXXXXXXX) so lookups are unambiguous.
   phone        String   @unique
   passwordHash String
+  // Optional and private: used only to notify about new messages. Never shown
+  // to other users — the public contact lives on Company.contact.
+  email        String?
   createdAt    DateTime @default(now())
 
   company Company?
@@ -37,6 +40,10 @@ model Company {
   updatedAt DateTime @updatedAt
 
   listings Listing[]
+
+  startedConversations  Conversation[] @relation("ConversationInitiator")
+  receivedConversations Conversation[] @relation("ConversationOwner")
+  sentMessages          Message[]      @relation("MessageSender")
 
   @@index([category])
   @@index([isDemo])
@@ -83,8 +90,54 @@ model Listing {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  conversations Conversation[]
+
   @@index([category])
   @@index([partnershipType])
   @@index([isActive, createdAt])
   @@index([expiresAt])
+}
+
+// A negotiation about one specific listing, between the company that owns it
+// and the company that reached out. Tying it to a listing (rather than just to
+// a company pair) keeps the context of what is being negotiated.
+model Conversation {
+  id        String  @id @default(cuid())
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  // The company that started the conversation.
+  initiatorId String
+  initiator   Company @relation("ConversationInitiator", fields: [initiatorId], references: [id], onDelete: Cascade)
+  // The company that owns the listing.
+  ownerId String
+  owner   Company @relation("ConversationOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+  lastMessageAt DateTime @default(now())
+
+  messages Message[]
+
+  // One thread per listing per initiator — a second "Написать" click reopens
+  // the existing conversation instead of starting a duplicate.
+  @@unique([listingId, initiatorId])
+  @@index([ownerId, lastMessageAt])
+  @@index([initiatorId, lastMessageAt])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  // Which side wrote it. Always one of the conversation's two companies.
+  senderId String
+  sender   Company @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  body      String
+  // Null until the other side opens the thread.
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([conversationId, createdAt])
 }
