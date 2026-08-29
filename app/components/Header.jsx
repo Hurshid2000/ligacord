@@ -38,7 +38,7 @@ export default function Header({ user, right = null }) {
           <ArrowLeftRight size={18} strokeWidth={2.4} />
         </span>
         <span>
-          <span className="hd-name">LIGACORD</span>
+          <span className="hd-name">CORD</span>
           <span className="hd-tag">b2b бартер · подбор партнёров</span>
         </span>
       </Link>

@@ -420,7 +420,7 @@ export default function CatalogClient({ user, initialListings }) {
       </div>
 
       <p className="foot">
-        Ligacord · подбор не гарантирует сделку · КП — черновик для проверки
+        Cord · подбор не гарантирует сделку · КП — черновик для проверки
       </p>
 
       <style>{`

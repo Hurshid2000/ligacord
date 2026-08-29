@@ -1,4 +1,4 @@
-// Ligacord data model.
+// Cord data model.
 // Company has many Listings (one company can post several barter offers).
 // Catalog is public; contacts are gated behind auth in the app layer.
 
